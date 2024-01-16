@@ -7,9 +7,6 @@ import os
 import sys
 import os
 import datetime
-from flask import Flask, render_template_string
-
-app = Flask(__name__)
 
 column_name_map = {
     'Info': {'en': 'Info', 'de': 'Info'},
@@ -108,52 +105,6 @@ def filter_data_frame_content_validity(data_frame_input):
     data_frame.drop('entry_valid', axis=1, inplace=True)
     return data_frame
 
-def generate_html_table(data_frame):
-    html_template = """
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Visualization</title>
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/3.3.2/css/fixedColumns.dataTables.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
-    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/fixedcolumns/3.3.2/js/dataTables.fixedColumns.min.js"></script>
-    <style>
-        /* Add styles to make filter input fields visible */
-        input.filter {
-            width: 80px; /* Adjust the width as needed */
-        }
-        .range-filter {
-            display: inline-block;
-            margin-right: 10px;
-        }
-    </style>
-    <script>
-        $(document).ready(function() {
-            var table = $('#dataTable').DataTable({
-                scrollX: true,
-                scrollY: true,
-            });
-            new $.fn.dataTable.FixedColumns(table, {
-                leftColumns: 1,
-                rightColumns: 0
-            });
-        });
-    </script>
-</head>
-<body>
-    {{ table_data | safe }}
-</body>
-</html>
-    """
-    table_html = data_frame.to_html(classes="display", table_id="dataTable", escape=False, index=False)
-    with app.app_context():
-        return render_template_string(html_template, table_data=table_html)
-
-
 def append_date_time_to_filename(filename, format="%Y%m%d_%H%M%S"):
     current_datetime = datetime.datetime.now().strftime(format)
     filename_parts = filename.rsplit('.', 1)
@@ -168,6 +119,9 @@ def append_date_time_to_filename(filename, format="%Y%m%d_%H%M%S"):
 
 def write_output_file(filename, content):
     open(filename, 'w', encoding='utf-8').write(content)
+
+def write_excel_output_file(data_frame, filename):
+    data_frame.to_excel(filename, index=False)
 
 def convert_column_to_int64(data_frame, column_name):
     df = data_frame.copy()
@@ -192,8 +146,7 @@ def handle_keeper_roles(data_frame_input, filename):
     df = data_frame_input.copy()
     df['Defending GK'] = calculate_position_value(squad_filtered, {'Agi', 'Ref'}, {'Aer', 'Cmd', 'Han', 'Kic', 'Cnt', 'Pos'}, {'1v1', 'Thr', 'Ant', 'Dec'})
     df['Sweeper Keeper'] = calculate_position_value(squad_filtered, {'Agi', 'Ref'}, {'Cmd', 'Kic', '1v1', 'Ant', 'Cnt', 'Pos'}, {'Aer', 'Fir', 'Han', 'Pas', 'TRO', 'Dec', 'Vis', 'Acc'})
-    content = generate_html_table(df)
-    write_output_file(append_date_time_to_filename("keeper_roles_" + filename), content)
+    return df
 
 def handle_central_defender_roles(data_frame_input, filename):
     df = data_frame_input.copy()
@@ -211,8 +164,7 @@ def handle_central_defender_roles(data_frame_input, filename):
     df['Wide CB - Defend'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Jum', 'Cmp'}, {'Hea', 'Mar', 'Tck', 'Pos', 'Str'}, {'Dri', 'Fir', 'Pas', 'Tec', 'Agg', 'Ant', 'Bra', 'Cnt', 'Dec', 'Wor', 'Agi'})
     df['Wide CB - Support'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Jum', 'Cmp'}, {'Dri', 'Hea', 'Mar', 'Tck', 'Pos', 'Str'}, {'Cro', 'Fir', 'Pas', 'Tec', 'Agg', 'Ant', 'Bra', 'Cnt', 'Dec', 'OtB', 'Wor', 'Agi', 'Sta'})
     df['Wide CB - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Jum', 'Cmp'}, {'Cro', 'Dri', 'Hea', 'Mar', 'Tck', 'OtB', 'Sta', 'Str'}, {'Fir', 'Pas', 'Tec', 'Agg', 'Ant', 'Bra', 'Cnt', 'Dec', 'Pos', 'Wor', 'Agi'})
-    content = generate_html_table(df) 
-    write_output_file(append_date_time_to_filename("central_defender_roles_" + filename), content)
+    return df
 
 def handle_outside_defender_roles(data_frame_input, filename):
     df = data_frame_input.copy()
@@ -229,8 +181,7 @@ def handle_outside_defender_roles(data_frame_input, filename):
     df['Wing Back - Support'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Cro', 'Dri', 'Mar', 'Tck', 'OtB', 'Tea'}, {'Fir', 'Pas', 'Tec', 'Ant', 'Cnt', 'Dec', 'Pos', 'Agi', 'Bal'})
     df['Wing Back - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Cro', 'Dri', 'Tck', 'Tec', 'OtB', 'Tea'}, {'Fir', 'Mar', 'Pas', 'Ant', 'Cnt', 'Dec', 'Fla', 'Pos', 'Agi', 'Bal'})
     df['Non FB - Defend'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Mar', 'Tck', 'Ant', 'Pos', 'Str'}, {'Hea', 'Agg', 'Bra', 'Cnt', 'Tea'})
-    content = generate_html_table(df)
-    write_output_file(append_date_time_to_filename("outside_defender_roles_" + filename), content)
+    return df
 
 def handle_midfielder_roles(data_frame_input, filename):
     df = data_frame_input.copy()
@@ -266,8 +217,7 @@ def handle_midfielder_roles(data_frame_input, filename):
     df['Wide Playmaker - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Dri', 'Fir', 'Pas', 'Tec', 'Cmp', 'Dec', 'OtB', 'Tea', 'Vis'}, {'Ant', 'Fla', 'Agi'})
     df['Enganche - Support'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Fir', 'Pas', 'Tec', 'Cmp', 'Dec', 'Vis'}, {'Dri', 'Ant', 'Fla', 'OtB', 'Tea', 'Agi'})
     df['Raumdeuter - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Fin', 'Ant', 'Cmp', 'Cnt', 'Dec', 'OtB', 'Bal'}, {'Fir', 'Tec'})
-    content = generate_html_table(df)
-    write_output_file(append_date_time_to_filename("midfielder_roles_" + filename), content)
+    return df
 
 def handle_attacker_roles(data_frame_input, filename):
     df = data_frame_input.copy()
@@ -293,8 +243,7 @@ def handle_attacker_roles(data_frame_input, filename):
     df['Inv Winger - Support'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Cro', 'Dri', 'Pas', 'Tec', 'Agi'}, {'Fir', 'Lon', 'Cmp', 'Dec', 'OtB', 'Vis', 'Bal'})
     df['Inv Winger - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Cro', 'Dri', 'Pas', 'Tec', 'Agi'}, {'Fir', 'Lon', 'Ant', 'Cmp', 'Dec', 'Fla', 'OtB', 'Vis', 'Bal'})
     df['Shadow Striker - Attack'] = calculate_position_value(squad_filtered, {'Acc', 'Pac', 'Sta', 'Wor'}, {'Dri', 'Fin', 'Fir', 'Ant', 'Cmp', 'OtB'}, {'Pas', 'Tec', 'Cnt', 'Dec', 'Agi', 'Bal'})
-    content = generate_html_table(df)
-    write_output_file(append_date_time_to_filename("attacker_roles_" + filename), content)
+    return df
 
 if __name__ == "__main__":
     # Check if the correct number of command-line arguments is provided
@@ -321,11 +270,13 @@ if __name__ == "__main__":
             print('Given data input has no valid entry - Not all attributes are set')
             exit()
 
-        handle_keeper_roles(squad_filtered, file_path)
-        handle_central_defender_roles(squad_filtered, file_path)
-        handle_outside_defender_roles(squad_filtered, file_path)
-        handle_midfielder_roles(squad_filtered, file_path)
-        handle_attacker_roles(squad_filtered, file_path)
+        squad_filtered = handle_keeper_roles(squad_filtered, file_path)
+        squad_filtered = handle_central_defender_roles(squad_filtered, file_path)
+        squad_filtered = handle_outside_defender_roles(squad_filtered, file_path)
+        squad_filtered = handle_midfielder_roles(squad_filtered, file_path)
+        squad_filtered = handle_attacker_roles(squad_filtered, file_path)
+
+        write_excel_output_file(squad_filtered, append_date_time_to_filename(file_path + ".xlsx"))
 
     except ValueError as e:
         print(e)
