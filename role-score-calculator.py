@@ -133,6 +133,24 @@ def write_excel_output_file(data_frame, filename):
     data_frame.to_excel(filename, index=False)
 
 
+def show_dash(data_frame):
+    from dash import Dash, dash_table, html
+    app = Dash(__name__)
+    app.layout = html.Div([
+        dash_table.DataTable(
+            data=data_frame.to_dict('records'),
+            columns=[{"name": i, "id": i} for i in data_frame.columns],
+            style_header={'border': '1px solid black'},
+            style_cell={'border': '1px solid grey'},
+            sort_action="native",
+            sort_mode="multi",
+            filter_action='native'
+        ),
+        html.Div(id='datatable-interactivity-container')
+    ])
+    app.run()
+
+
 def convert_column_to_int64(data_frame, column_name):
     df = data_frame.copy()
     df[column_name] = df[column_name].astype('int64')
@@ -443,12 +461,14 @@ def handle_attacker_roles(data_frame_input, filename):
 
 if __name__ == "__main__":
     # Check if the correct number of command-line arguments is provided
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Usage: python script.py <file_path>")
         sys.exit(1)
 
     # Get the file path from the command-line argument
     file_path = sys.argv[1]
+
+    output = sys.argv[2] or "excel"
 
     # Check if the input is a valid file
     if not is_valid_file(file_path):
@@ -474,7 +494,12 @@ if __name__ == "__main__":
         squad_filtered = handle_midfielder_roles(squad_filtered, file_path)
         squad_filtered = handle_attacker_roles(squad_filtered, file_path)
 
-        write_excel_output_file(squad_filtered, append_date_time_to_filename(file_path + ".xlsx"))
+        if "excel" == output:
+            write_excel_output_file(squad_filtered, append_date_time_to_filename(file_path + ".xlsx"))
+        elif "dash" == output:
+            show_dash(squad_filtered)
+        else:
+            print(f"output {output} is not implemented!")
 
     except ValueError as e:
         print(e)
