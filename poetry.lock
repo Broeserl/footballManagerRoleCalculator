@@ -16,6 +16,17 @@ docs = ["mkdocs", "mkdocs-material", "mkdocs-material-extensions", "mkdocstrings
 test = ["pytest", "pytest-cov"]
 
 [[package]]
+name = "argparse"
+version = "1.4.0"
+description = "Python command-line parsing library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "argparse-1.4.0-py2.py3-none-any.whl", hash = "sha256:c31647edb69fd3d465a847ea3157d37bed1f95f19760b11a47aa91c04b666314"},
+    {file = "argparse-1.4.0.tar.gz", hash = "sha256:62b089a55be1d8949cd2bc7e0df0bddb9e028faefc8c32038cc84862aefdd6e4"},
+]
+
+[[package]]
 name = "blinker"
 version = "1.7.0"
 description = "Fast, simple object-to-object and broadcast signaling"
@@ -819,4 +830,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "eae4b6085bd44abf67d3217818aa19c91ccb8abf673bb13a3a42262f420d342b"
+content-hash = "ac05d5cabcb35c6361d9884eaa7a129c32f76f917f7db2fbbac5fa8b45a172f7"

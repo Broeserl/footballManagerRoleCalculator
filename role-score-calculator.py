@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-
+import argparse
 import datetime
 import os
 import sys
@@ -460,23 +460,20 @@ def handle_attacker_roles(data_frame_input, filename):
 
 
 if __name__ == "__main__":
-    # Check if the correct number of command-line arguments is provided
-    if len(sys.argv) < 2:
-        print("Usage: python script.py <file_path>")
-        sys.exit(1)
 
-    # Get the file path from the command-line argument
-    file_path = sys.argv[1]
+    parser = argparse.ArgumentParser(description='Role Score Calculator')
+    parser.add_argument('file')
+    parser.add_argument('-o', '--output', choices=['excel', 'dash'], default="excel")
 
-    output = sys.argv[2] or "excel"
+    args = parser.parse_args()
 
     # Check if the input is a valid file
-    if not is_valid_file(file_path):
-        print(f"{file_path} is not a valid file or does not exist.")
+    if not is_valid_file(args.file):
+        print(f"{args.file} is not a valid file or does not exist.")
         exit()
 
     try:
-        squad_rawdata = read_html_file(file_path)
+        squad_rawdata = read_html_file(args.file)
         language = get_language_of_html_file(squad_rawdata)
 
         squad_stripped = remove_columns_from_data_frame(squad_rawdata, {'Info', 'Media Handling', 'Min Fee Rls',
@@ -488,18 +485,18 @@ if __name__ == "__main__":
             print('Given data input has no valid entry - Not all attributes are set')
             exit()
 
-        squad_filtered = handle_keeper_roles(squad_filtered, file_path)
-        squad_filtered = handle_central_defender_roles(squad_filtered, file_path)
-        squad_filtered = handle_outside_defender_roles(squad_filtered, file_path)
-        squad_filtered = handle_midfielder_roles(squad_filtered, file_path)
-        squad_filtered = handle_attacker_roles(squad_filtered, file_path)
+        squad_filtered = handle_keeper_roles(squad_filtered, args.file)
+        squad_filtered = handle_central_defender_roles(squad_filtered, args.file)
+        squad_filtered = handle_outside_defender_roles(squad_filtered, args.file)
+        squad_filtered = handle_midfielder_roles(squad_filtered, args.file)
+        squad_filtered = handle_attacker_roles(squad_filtered, args.file)
 
-        if "excel" == output:
-            write_excel_output_file(squad_filtered, append_date_time_to_filename(file_path + ".xlsx"))
-        elif "dash" == output:
+        if "excel" == args.output:
+            write_excel_output_file(squad_filtered, append_date_time_to_filename(args.file + ".xlsx"))
+        elif "dash" == args.output:
             show_dash(squad_filtered)
         else:
-            print(f"output {output} is not implemented!")
+            print(f"output {args.output} is not implemented!")
 
     except ValueError as e:
         print(e)
